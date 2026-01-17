@@ -1,0 +1,482 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Retro Number Guess</title>
+    <style>
+      :root {
+        --paper: #f6f1e3;
+        --ink: #2b2b2b;
+        --shadow: rgba(30, 30, 30, 0.15);
+        --green: #5aa469;
+        --yellow: #e6c35c;
+        --red: #d66a6a;
+      }
+
+      * {
+        box-sizing: border-box;
+      }
+
+      body {
+        margin: 0;
+        min-height: 100vh;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        background: linear-gradient(180deg, #d8cdb8 0%, #bfae95 100%);
+        color: var(--ink);
+        font-family: "Trebuchet MS", "Georgia", serif;
+      }
+
+      .paper {
+        width: min(960px, 92vw);
+        background: var(--paper);
+        border: 3px solid #3a332d;
+        box-shadow: 0 18px 40px var(--shadow);
+        padding: 32px 28px 36px;
+        position: relative;
+        border-radius: 12px;
+      }
+
+      .paper::before,
+      .paper::after {
+        content: "";
+        position: absolute;
+        inset: 0;
+        background-image: radial-gradient(rgba(50, 40, 30, 0.1) 1px, transparent 1px);
+        background-size: 6px 6px;
+        opacity: 0.5;
+        pointer-events: none;
+        border-radius: 9px;
+      }
+
+      .paper::after {
+        background-image: linear-gradient(
+          0deg,
+          rgba(255, 255, 255, 0.5) 0%,
+          rgba(255, 255, 255, 0) 60%
+        );
+        opacity: 0.35;
+      }
+
+      header {
+        display: flex;
+        flex-direction: column;
+        gap: 10px;
+        margin-bottom: 24px;
+        position: relative;
+        z-index: 1;
+      }
+
+      h1 {
+        margin: 0;
+        font-size: clamp(28px, 4vw, 42px);
+        letter-spacing: 2px;
+        text-transform: uppercase;
+      }
+
+      .subtitle {
+        font-size: 15px;
+        color: #544b42;
+      }
+
+      .game {
+        display: grid;
+        gap: 24px;
+        grid-template-columns: minmax(260px, 1fr) minmax(260px, 1fr);
+        align-items: start;
+        position: relative;
+        z-index: 1;
+      }
+
+      @media (max-width: 720px) {
+        .game {
+          grid-template-columns: 1fr;
+        }
+      }
+
+      .panel {
+        padding: 18px;
+        border: 2px dashed #5a5147;
+        border-radius: 10px;
+        background: rgba(255, 255, 255, 0.6);
+      }
+
+      .panel h2 {
+        margin-top: 0;
+        font-size: 18px;
+        letter-spacing: 1px;
+      }
+
+      .guess-inputs {
+        display: grid;
+        grid-template-columns: repeat(4, 1fr);
+        gap: 10px;
+        margin-bottom: 16px;
+      }
+
+      .guess-inputs input {
+        width: 100%;
+        padding: 10px 0;
+        font-size: 20px;
+        text-align: center;
+        border: 2px solid #51483f;
+        border-radius: 6px;
+        background: #faf7ee;
+        box-shadow: inset 0 2px 0 rgba(0, 0, 0, 0.15);
+      }
+
+      .actions {
+        display: flex;
+        gap: 12px;
+        flex-wrap: wrap;
+      }
+
+      button {
+        border: 2px solid #3a332d;
+        background: #ede2c8;
+        padding: 10px 18px;
+        font-size: 14px;
+        letter-spacing: 1px;
+        text-transform: uppercase;
+        cursor: pointer;
+        border-radius: 8px;
+        box-shadow: 0 4px 0 #3a332d;
+        transition: transform 0.1s ease;
+      }
+
+      button:active {
+        transform: translateY(2px);
+        box-shadow: 0 2px 0 #3a332d;
+      }
+
+      button.secondary {
+        background: #cfc1aa;
+      }
+
+      .status {
+        margin-top: 16px;
+        font-size: 14px;
+        color: #5f554b;
+        min-height: 20px;
+      }
+
+      .log {
+        display: flex;
+        flex-direction: column;
+        gap: 12px;
+      }
+
+      .round {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 16px;
+        padding: 12px 14px;
+        border: 2px solid #7a6f63;
+        border-radius: 10px;
+        background: #f8f3e8;
+      }
+
+      .round .digits {
+        display: flex;
+        gap: 8px;
+      }
+
+      .digit {
+        width: 34px;
+        height: 38px;
+        border: 2px solid #4f463d;
+        border-radius: 6px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-weight: bold;
+        background: #fff7e6;
+      }
+
+      .pegs {
+        display: flex;
+        gap: 6px;
+      }
+
+      .peg {
+        width: 14px;
+        height: 14px;
+        border-radius: 50%;
+        border: 2px solid #333;
+      }
+
+      .peg.green {
+        background: var(--green);
+      }
+
+      .peg.yellow {
+        background: var(--yellow);
+      }
+
+      .peg.red {
+        background: var(--red);
+      }
+
+      .win-banner {
+        margin-top: 18px;
+        padding: 14px;
+        border: 2px solid #3a332d;
+        border-radius: 10px;
+        background: #f3d9a4;
+        display: none;
+      }
+
+      .win-banner strong {
+        display: block;
+        font-size: 16px;
+        margin-bottom: 6px;
+      }
+
+      .legend {
+        display: flex;
+        gap: 12px;
+        align-items: center;
+        flex-wrap: wrap;
+        font-size: 13px;
+      }
+
+      .legend span {
+        display: inline-flex;
+        align-items: center;
+        gap: 6px;
+      }
+
+      .legend .peg {
+        width: 12px;
+        height: 12px;
+      }
+    </style>
+  </head>
+  <body>
+    <main class="paper">
+      <header>
+        <h1>Retro Number Guess</h1>
+        <div class="subtitle">
+          Crack the hidden 4-digit code. Green = right digit, right place. Yellow
+          = right digit, wrong place. Red = not in code.
+        </div>
+      </header>
+
+      <section class="game">
+        <div class="panel">
+          <h2>Make a Guess</h2>
+          <div class="guess-inputs" id="guessInputs">
+            <input inputmode="numeric" maxlength="1" aria-label="Digit 1" />
+            <input inputmode="numeric" maxlength="1" aria-label="Digit 2" />
+            <input inputmode="numeric" maxlength="1" aria-label="Digit 3" />
+            <input inputmode="numeric" maxlength="1" aria-label="Digit 4" />
+          </div>
+          <div class="actions">
+            <button id="submitGuess">Submit</button>
+            <button class="secondary" id="newRound">New Round</button>
+            <button class="secondary" id="reveal">Reveal Code</button>
+          </div>
+          <div class="status" id="statusMessage">Round started. Make your first guess.</div>
+          <div class="win-banner" id="winBanner">
+            <strong>Case closed!</strong>
+            You solved the code. Start a new round to play again.
+          </div>
+        </div>
+
+        <div class="panel">
+          <h2>Guess Log</h2>
+          <div class="legend">
+            <span><i class="peg green"></i> Right digit, right spot</span>
+            <span><i class="peg yellow"></i> Right digit, wrong spot</span>
+            <span><i class="peg red"></i> Not in code</span>
+          </div>
+          <div class="log" id="guessLog"></div>
+        </div>
+      </section>
+    </main>
+
+    <script>
+      const inputs = Array.from(document.querySelectorAll("#guessInputs input"));
+      const submitBtn = document.querySelector("#submitGuess");
+      const newRoundBtn = document.querySelector("#newRound");
+      const revealBtn = document.querySelector("#reveal");
+      const statusMessage = document.querySelector("#statusMessage");
+      const guessLog = document.querySelector("#guessLog");
+      const winBanner = document.querySelector("#winBanner");
+
+      let secret = [];
+      let isSolved = false;
+
+      const generateSecret = () => {
+        const digits = new Set();
+        while (digits.size < 4) {
+          digits.add(Math.floor(Math.random() * 10));
+        }
+        secret = Array.from(digits);
+      };
+
+      const resetInputs = () => {
+        inputs.forEach((input) => {
+          input.value = "";
+          input.disabled = false;
+        });
+        inputs[0].focus();
+      };
+
+      const setStatus = (message) => {
+        statusMessage.textContent = message;
+      };
+
+      const lockInputs = () => {
+        inputs.forEach((input) => {
+          input.disabled = true;
+        });
+      };
+
+      const startRound = () => {
+        generateSecret();
+        isSolved = false;
+        guessLog.innerHTML = "";
+        winBanner.style.display = "none";
+        setStatus("Round started. Make your first guess.");
+        resetInputs();
+      };
+
+      const readGuess = () =>
+        inputs.map((input) => input.value.trim()).join("");
+
+      const validateGuess = (guess) => {
+        if (guess.length !== 4) {
+          return "Enter four digits.";
+        }
+        if (!/^\d{4}$/.test(guess)) {
+          return "Only digits 0-9 are allowed.";
+        }
+        return "";
+      };
+
+      const scoreGuess = (guessDigits) => {
+        const secretCopy = [...secret];
+        const guessCopy = [...guessDigits];
+        let greens = 0;
+        let yellows = 0;
+
+        for (let i = 0; i < 4; i += 1) {
+          if (guessCopy[i] === secretCopy[i]) {
+            greens += 1;
+            secretCopy[i] = null;
+            guessCopy[i] = null;
+          }
+        }
+
+        for (let i = 0; i < 4; i += 1) {
+          if (guessCopy[i] !== null) {
+            const index = secretCopy.indexOf(guessCopy[i]);
+            if (index !== -1) {
+              yellows += 1;
+              secretCopy[index] = null;
+            }
+          }
+        }
+
+        const reds = 4 - greens - yellows;
+        return { greens, yellows, reds };
+      };
+
+      const createRoundRow = (guessDigits, result) => {
+        const row = document.createElement("div");
+        row.className = "round";
+
+        const digitsWrap = document.createElement("div");
+        digitsWrap.className = "digits";
+        guessDigits.forEach((digit) => {
+          const cell = document.createElement("div");
+          cell.className = "digit";
+          cell.textContent = digit;
+          digitsWrap.appendChild(cell);
+        });
+
+        const pegsWrap = document.createElement("div");
+        pegsWrap.className = "pegs";
+
+        const pegOrder = [
+          ...Array(result.greens).fill("green"),
+          ...Array(result.yellows).fill("yellow"),
+          ...Array(result.reds).fill("red"),
+        ];
+
+        pegOrder.forEach((color) => {
+          const peg = document.createElement("span");
+          peg.className = `peg ${color}`;
+          pegsWrap.appendChild(peg);
+        });
+
+        row.appendChild(digitsWrap);
+        row.appendChild(pegsWrap);
+        guessLog.prepend(row);
+      };
+
+      const submitGuess = () => {
+        if (isSolved) {
+          setStatus("Round over. Start a new round.");
+          return;
+        }
+        const guess = readGuess();
+        const error = validateGuess(guess);
+        if (error) {
+          setStatus(error);
+          return;
+        }
+
+        const guessDigits = guess.split("").map((digit) => Number(digit));
+        const result = scoreGuess(guessDigits);
+        createRoundRow(guessDigits, result);
+
+        if (result.greens === 4) {
+          isSolved = true;
+          setStatus("Perfect match. You solved the code!");
+          winBanner.style.display = "block";
+          lockInputs();
+        } else {
+          setStatus("Keep guessing. Green first, yellow second, red last.");
+          resetInputs();
+        }
+      };
+
+      const revealSecret = () => {
+        setStatus(`Hidden code: ${secret.join("")}`);
+      };
+
+      inputs.forEach((input, index) => {
+        input.addEventListener("input", (event) => {
+          const value = event.target.value.replace(/\D/g, "");
+          event.target.value = value;
+          if (value && index < inputs.length - 1) {
+            inputs[index + 1].focus();
+          }
+        });
+
+        input.addEventListener("keydown", (event) => {
+          if (event.key === "Backspace" && !event.target.value && index > 0) {
+            inputs[index - 1].focus();
+          }
+        });
+      });
+
+      submitBtn.addEventListener("click", submitGuess);
+      newRoundBtn.addEventListener("click", startRound);
+      revealBtn.addEventListener("click", revealSecret);
+
+      document.addEventListener("keydown", (event) => {
+        if (event.key === "Enter") {
+          submitGuess();
+        }
+      });
+
+      startRound();
+    </script>
+  </body>
+</html>
